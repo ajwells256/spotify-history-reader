@@ -1,23 +1,22 @@
 import json
-import os
 
-from classes import Item
-
-PATH = "./data"
+from typing import List, Iterator
+from src.core import Play
 
 
-def streaming_history(source: str = "./data"):
-    for path in os.listdir(source):
-        if not path.endswith(".json"):
-            continue
+class SpotifyHistoryReader:
+    """A class for managing the reading of Plays from a set of data files."""
 
-        file = open(f"{source}/{path}")
+    def __init__(self):
+        self.sources: List[str] = []
 
-        for item in json.load(file):
-            is_episode = item["spotify_episode_uri"]
-            is_track = item["spotify_track_uri"]
+    def add_source(self, source_path: str):
+        """Adds the provided source_path to the history reader."""
+        self.sources.append(source_path)
 
-            if not (is_episode or is_track):
-                continue
-
-            yield Item(**item)
+    def read(self) -> Iterator[Play]:
+        """Reads all the Plays in the provided source files."""
+        for source_path in self.sources:
+            with open(source_path, "r") as file:
+                for entry in json.load(file):
+                    yield Play(**entry)

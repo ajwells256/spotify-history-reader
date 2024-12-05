@@ -58,7 +58,7 @@ class Playback:
         self.timestamp: datetime = timestamp
 
 
-class Item:
+class Play:
     def __init__(self, **data: dict):
         self.episode: Episode = None
         self.track: Track = None
@@ -77,7 +77,7 @@ class Item:
                 uri=data["spotify_track_uri"],
             )
         else:
-            raise ValueError("Invalid item")
+            raise ValueError("Invalid play")
 
         self.connection = Connection(
             username=data["username"],
@@ -97,11 +97,24 @@ class Item:
             timestamp=datetime.fromisoformat(data["ts"].replace("Z", "+00:00")),
         )
 
+    @property
+    def artist(self) -> str:
+        """Gets the artist (or show) of the play"""
+        if self.track is not None:
+            return self.track.artist
+        else:
+            return self.episode.show
+
+    @property
+    def song(self) -> str:
+        """Gets the name of the song (or the episode) of the play"""
+        if self.track is not None:
+            return self.track.name
+        else:
+            return self.episode.name
+
     def __repr__(self):
         if self.episode:
             return str(self.episode)
-
-        if self.track:
+        else:
             return str(self.track)
-
-        return "unknown"

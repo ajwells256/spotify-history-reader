@@ -1,15 +1,1 @@
-*.py[cod]
-
-.idea
-
-
-dist/
-*.egg-info/
-*.DS_Store
-
-.venv/
-venv/
-
-
-*json
-tmp.py
+**/__pycache__/*

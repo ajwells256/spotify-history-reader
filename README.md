@@ -1,6 +1,6 @@
 # SPOTIFY-HISTORY-READER
 
-Simple tool to read Spotify's extended streaming history, you can follow [this guide](https://support.stats.fm/docs/import/spotify-import/) to get yours.
+A simple tool to read Spotify's extended streaming history. You can follow [this guide](https://support.stats.fm/docs/import/spotify-import/) to get yours.
 
 
 # json files contents

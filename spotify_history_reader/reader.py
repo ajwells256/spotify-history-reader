@@ -1,7 +1,7 @@
 import json
 
 from typing import List, Iterator
-from src.core import Play
+from spotify_history_reader.core import Play
 
 
 class SpotifyHistoryReader:
@@ -19,4 +19,9 @@ class SpotifyHistoryReader:
         for source_path in self.sources:
             with open(source_path, "r") as file:
                 for entry in json.load(file):
-                    yield Play(**entry)
+                    try:
+                        yield Play(**entry)
+                    except:
+                        print("Encountered exception while handling entry:")
+                        print(entry)
+                        raise

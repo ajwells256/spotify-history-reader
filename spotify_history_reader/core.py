@@ -23,21 +23,21 @@ class Track:
 
 
 class Connection:
-    def __init__(
-        self,
-        username: str,
-        platform: str,
-        ip: str,
-        country: str,
-        offline: bool,
-        incognito_mode: bool,
-    ):
-        self.username: str = username
-        self.platfrom: str = platform
-        self.ip: str = ip
-        self.country: str = country
-        self.offline: bool = offline
-        self.incognito_mode: bool = incognito_mode
+    def __init__(self, data: dict):
+        self.username: str = data["username"] if "username" in data else "unknown"
+        self.platfrom: str = data["platfrom"] if "platfrom" in data else "unknown"
+        self.ip: str = (
+            data["ip_addr_decrypted"]
+            if "ip_addr_decrypted" in data
+            else (data["ip_addr"] if "ip_addr" in data else "unknown")
+        )
+        self.country: str = (
+            data["conn_country"] if "conn_country" in data else "unknown"
+        )
+        self.offline: bool = data["offline"] if "offline" in data else False
+        self.incognito_mode: bool = (
+            data["incognito_mode"] if "incognito_mode" in data else False
+        )
 
 
 class Playback:
@@ -79,14 +79,7 @@ class Play:
         else:
             raise ValueError("Invalid play")
 
-        self.connection = Connection(
-            username=data["username"],
-            platform=data["platform"],
-            ip=data["ip_addr_decrypted"],
-            country=data["conn_country"],
-            offline=data["offline"],
-            incognito_mode=data["incognito_mode"],
-        )
+        self.connection = Connection(data)
 
         self.playback = Playback(
             ms_played=data["ms_played"],
@@ -112,6 +105,19 @@ class Play:
             return self.track.name
         else:
             return self.episode.name
+
+    @property
+    def id(self) -> str:
+        """Gets the identifier (URI) of the track played"""
+        if self.track is not None:
+            return self.track.uri
+        else:
+            return self.episode.uri
+
+    @property
+    def is_song(self) -> bool:
+        """Gets whether the play was a song (the alternative being a podcast episode)"""
+        return self.track is not None
 
     def __repr__(self):
         if self.episode:

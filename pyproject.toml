@@ -1,10 +1,10 @@
 [tool.poetry]
-name = "spotify-data-reader"
+name = "spotify-history-reader"
 version = "0.1.0"
 description = ""
-authors = ["Fede Calendino <fede@calendino.com>"]
+authors = ["Andrew Wells <ajwells128@gmail.com>"]
 readme = "README.md"
-packages = [{include = "spotify_data_reader"}]
+packages = [{include = "spotify_history_reader"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

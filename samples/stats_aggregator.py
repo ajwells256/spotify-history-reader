@@ -16,39 +16,39 @@ def aggregate_stats(predicate: Callable[[Play], bool] = lambda x: True, top=10):
         "/home/andrew/Downloads/2024_12_07_spotify/Spotify Extended Streaming History/Streaming_History_Audio_2023-2024_4.json",
     ]
 
-    reader = SpotifyHistoryReader()
-    for history_path in history_paths:
-        if not path.exists(history_path):
-            print(
-                "Ensure to update this sample to include one or more real spotify streaming history files"
-            )
-            exit(-1)
-        reader.add_source(history_path)
+    with SpotifyHistoryReader() as reader:
+        for history_path in history_paths:
+            if not path.exists(history_path):
+                print(
+                    "Ensure to update this sample to include one or more real spotify streaming history files"
+                )
+                exit(-1)
+            reader.add_source(history_path)
 
-    played_ms = 0
-    play_time_by_artist: Dict[str, int] = {}
-    play_count_by_id: Dict[str, int] = {}
-    id_name_map: Dict[str, str] = {}
-    for play in reader.read():
-        if not predicate(play):
-            continue
+        played_ms = 0
+        play_time_by_artist: Dict[str, int] = {}
+        play_count_by_id: Dict[str, int] = {}
+        id_name_map: Dict[str, str] = {}
+        for play in reader.read():
+            if not predicate(play):
+                continue
 
-        # total time
-        played_ms += play.playback.ms_played
+            # total time
+            played_ms += play.playback.ms_played
 
-        # time by artist
-        if play.artist in play_time_by_artist:
-            play_time_by_artist[play.artist] += play.playback.ms_played
-        else:
-            play_time_by_artist[play.artist] = play.playback.ms_played
+            # time by artist
+            if play.artist in play_time_by_artist:
+                play_time_by_artist[play.artist] += play.playback.ms_played
+            else:
+                play_time_by_artist[play.artist] = play.playback.ms_played
 
-        # play count by song
-        # TODO: Multiple URIs might correspond to "similar" songs, dedupe would be neat (but hard)
-        if play.id in play_count_by_id:
-            play_count_by_id[play.id] += 1
-        else:
-            id_name_map[play.id] = play.song
-            play_count_by_id[play.id] = 1
+            # play count by song
+            # TODO: Multiple URIs might correspond to "similar" songs, dedupe would be neat (but hard)
+            if play.id in play_count_by_id:
+                play_count_by_id[play.id] += 1
+            else:
+                id_name_map[play.id] = play.song
+                play_count_by_id[play.id] = 1
 
     show_time_listened(played_ms)
 

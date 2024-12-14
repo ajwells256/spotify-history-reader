@@ -119,6 +119,11 @@ class Play:
         """Gets whether the play was a song (the alternative being a podcast episode)"""
         return self.track is not None
 
+    @property
+    def timestamp(self) -> datetime:
+        """Gets the timestamp of the play"""
+        return self.playback.timestamp
+
     def __repr__(self):
         if self.episode:
             return str(self.episode)

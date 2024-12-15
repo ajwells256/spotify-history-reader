@@ -11,7 +11,7 @@ def plot_top_artists_over_time(
     predicate: Callable[[Play], bool] = lambda x: True, top=5
 ):
     with SpotifyHistoryReader() as reader:
-        reader.add_source_zip("/home/andrew/Downloads/2024_12_07_spotify.zip")
+        reader.add_source_zip("~/Downloads/Spotify.zip")
 
         play_time_by_artist: Dict[str, int] = {}
         play_time_by_artist_by_year: Dict[int, Dict[str, int]] = {}
@@ -76,6 +76,9 @@ def plot_artists_play_data(
     ],  # play_time_by_artist: Dict[str, int],
     title: str,
 ):
+    if len(artists) == 0:
+        return
+
     ordered_years = sorted(play_time_by_artist_by_year.keys())
     for artist in artists:
         artist_data = [

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spotify-history-reader"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Andrew Wells <ajwells128@gmail.com>"]
 readme = "README.md"
@@ -8,6 +8,9 @@ packages = [{include = "spotify_history_reader"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.3.4"
 
 
 [tool.poetry.group.dev.dependencies]

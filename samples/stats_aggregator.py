@@ -1,5 +1,4 @@
 from collections import Counter
-from os import path
 
 from typing import Dict, Callable
 
@@ -9,20 +8,13 @@ from spotify_history_reader import SpotifyHistoryReader, Play
 def aggregate_stats(predicate: Callable[[Play], bool] = lambda x: True, top=10):
 
     history_paths = [
-        "/home/andrew/Downloads/2024_12_07_spotify/Spotify Extended Streaming History/Streaming_History_Audio_2017-2020_0.json",
-        "/home/andrew/Downloads/2024_12_07_spotify/Spotify Extended Streaming History/Streaming_History_Audio_2020-2021_1.json",
-        "/home/andrew/Downloads/2024_12_07_spotify/Spotify Extended Streaming History/Streaming_History_Audio_2021-2022_2.json",
-        "/home/andrew/Downloads/2024_12_07_spotify/Spotify Extended Streaming History/Streaming_History_Audio_2022-2023_3.json",
-        "/home/andrew/Downloads/2024_12_07_spotify/Spotify Extended Streaming History/Streaming_History_Audio_2023-2024_4.json",
+        "~/Downloads/Spotify/Spotify Extended Streaming History/Streaming_History_Audio_2021-2022_2.json",
+        "~/Downloads/Spotify/Spotify Extended Streaming History/Streaming_History_Audio_2022-2023_3.json",
+        "~/Downloads/Spotify/Spotify Extended Streaming History/Streaming_History_Audio_2023-2024_4.json",
     ]
 
     with SpotifyHistoryReader() as reader:
         for history_path in history_paths:
-            if not path.exists(history_path):
-                print(
-                    "Ensure to update this sample to include one or more real spotify streaming history files"
-                )
-                exit(-1)
             reader.add_source(history_path)
 
         played_ms = 0

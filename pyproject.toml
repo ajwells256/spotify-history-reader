@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spotify-history-reader"
-version = "0.1.1"
+version = "0.1.2"
 description = ""
 authors = ["Andrew Wells <ajwells128@gmail.com>"]
 readme = "README.md"

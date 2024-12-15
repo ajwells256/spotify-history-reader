@@ -12,4 +12,4 @@ PyQt5-Qt5==5.15.15
 PyQt5_sip==12.16.1
 python-dateutil==2.9.0.post0
 six==1.17.0
-spotify-history-reader==0.1.0
+spotify-history-reader>=0.1.2

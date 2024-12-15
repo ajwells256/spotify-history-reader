@@ -1,7 +1,8 @@
 from collections import Counter
 from matplotlib import pyplot as plt
 
-from typing import Dict, Callable, Set
+from typing import Dict, Callable, List, Set, Tuple, Any
+from enum import Enum
 
 from spotify_history_reader import SpotifyHistoryReader, Play
 
@@ -37,19 +38,46 @@ def plot_top_artists_over_time(
                     play.artist
                 ] = play.playback.ms_played
 
-    ordered_years = sorted(play_time_by_artist_by_year.keys())
+    top_artists_by_year: Dict[int, Set[str]] = {
+        year: set(
+            map(lambda x: x[0], Counter(yearly_play_time_by_artist).most_common(top))
+        )
+        for year, yearly_play_time_by_artist in play_time_by_artist_by_year.items()
+    }
+
     top_artists_over_years: Set[str] = set()
+    for _, value in top_artists_by_year.items():
+        top_artists_over_years = top_artists_over_years.union(value)
+
+    plot_artists_play_data(
+        top_artists_over_years,
+        play_time_by_artist_by_year,
+        # sort by the play time for all time
+        lambda t: play_time_by_artist[t[1]],
+        f"Time spent listening to all top {top} artists from each year",
+    )
+
+    ordered_years = sorted(play_time_by_artist_by_year.keys())
     for year in ordered_years:
-        top_artists_over_years = top_artists_over_years.union(
-            [
-                key
-                for key, _ in Counter(play_time_by_artist_by_year[year]).most_common(
-                    top
-                )
-            ]
+        plot_artists_play_data(
+            top_artists_by_year[year],
+            play_time_by_artist_by_year,
+            # sort by the play time for the current year
+            lambda t: play_time_by_artist_by_year[year][t[1]],
+            f"Time spent listening to top {top} artists of {year}",
         )
 
-    for artist in top_artists_over_years:
+
+def plot_artists_play_data(
+    artists: List[str],
+    play_time_by_artist_by_year: Dict[int, Dict[str, int]],
+    sort_method: Callable[
+        [Tuple[Any, Any]], Any
+    ],  # play_time_by_artist: Dict[str, int],
+    title: str,
+):
+    ordered_years = sorted(play_time_by_artist_by_year.keys())
+    for artist in artists:
         artist_data = [
             play_time_by_artist_by_year[year].get(artist, 0) / 60000
             for year in ordered_years
@@ -59,19 +87,16 @@ def plot_top_artists_over_time(
     handles, labels = plt.gca().get_legend_handles_labels()
 
     # sort by the overall play time of the artist
-    handles, labels = zip(
-        *sorted(
-            zip(handles, labels), key=lambda t: play_time_by_artist[t[1]], reverse=True
-        )
-    )
+    handles, labels = zip(*sorted(zip(handles, labels), key=sort_method, reverse=True))
 
     plt.legend(handles, labels)
 
     plt.xlabel("Year")
     plt.ylabel("Minutes listened")
+    plt.title(title)
 
     plt.show()
 
 
 if __name__ == "__main__":
-    plot_top_artists_over_time(lambda play: play.is_song)
+    plot_top_artists_over_time(lambda play: play.is_song, 10)

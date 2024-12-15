@@ -46,14 +46,16 @@ class SpotifyHistoryReader:
                 zip_ref.extract(file, temp_dir)
         self.add_source_directory(temp_dir)
 
-    def read(self) -> Iterator[Play]:
+    def read(self, strict=False) -> Iterator[Play]:
         """Reads all the Plays in the provided source files."""
         for source_path in self.sources:
             with open(source_path, "r") as file:
                 for entry in json.load(file):
                     try:
                         yield Play(**entry)
-                    except:
+                    except ValueError:
                         print("Encountered exception while handling entry:")
                         print(entry)
-                        raise
+                        if strict:
+                            raise
+                        print("Will continue without the entry")

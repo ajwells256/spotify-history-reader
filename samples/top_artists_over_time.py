@@ -2,7 +2,6 @@ from collections import Counter
 from matplotlib import pyplot as plt
 
 from typing import Dict, Callable, List, Set, Tuple, Any
-from enum import Enum
 
 from spotify_history_reader import SpotifyHistoryReader, Play
 

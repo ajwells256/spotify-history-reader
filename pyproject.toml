@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "spotify-history-reader"
 version = "0.1.2"
-description = ""
+description = "A simple tool to read Spotify's extended streaming history."
 authors = ["Andrew Wells <ajwells128@gmail.com>"]
 readme = "README.md"
 packages = [{include = "spotify_history_reader"}]

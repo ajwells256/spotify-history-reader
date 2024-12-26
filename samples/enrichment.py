@@ -259,6 +259,12 @@ with SpotifyHistoryReader() as reader:
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
+if client_id is None or len(client_id) == 0:
+    print("SPOTIFY_CLIENT_ID environment variable not found. See README")
+
+if client_secret is None or len(client_secret) == 0:
+    print("SPOTIFY_CLIENT_SECRET environment variable not found. See README")
+
 with SpotifyRepository(
     client_id, client_secret, "samples/.cache"
 ) as spotify_repository:

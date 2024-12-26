@@ -81,3 +81,10 @@ Data for the connection of the listener of the track.
 The enrichment sample does some heavy lifting in terms of using the Spotify API to read further data on the plays that have been parsed from the extended streaming data. It requires more configuration than the other samples, though. Specifically, you need a Spotify App Client ID and Secret. See `https://developer.spotify.com/documentation/web-api` for some helpful details and links.
 
 During the Create an App step, give it a redirect url of `http://localhost:1234`. The actual redirect URL seems to be important (in that it must be provided) yet unimportant (in that for our purposes, we don't need to really have anything serving that address); this is the URL currently configured in the sample and they should probably match. On the first run, your browser may ask you to authenticate to your own Spotify account. This is expected and happens just once.
+
+Create a file called `.env` in the root of the git repository. Populate it with the following. This will be read in the sample.
+
+```
+SPOTIFY_CLIENT_ID=<YOUR CLIENT ID>
+SPOTIFY_CLIENT_SECRET=<YOUR CLIENT SECRET>
+```

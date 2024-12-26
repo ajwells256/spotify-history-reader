@@ -21,6 +21,7 @@ class Cache:
         if os.path.exists(self.file_path):
             with open(self.file_path, "r", encoding="utf-8") as file:
                 self.cache = json.load(file)
+        self.dirty = False
 
     def __contains__(self, item: str):
         return item in self.cache
@@ -30,16 +31,18 @@ class Cache:
 
     def __setitem__(self, item: str, value: Any):
         self.cache[item] = value
+        self.dirty = True
 
     def flush(self):
-        dirname = os.path.dirname(self.file_path)
-        os.makedirs(dirname, exist_ok=True)
-        with open(self.file_path, "wt", encoding="utf-8") as file:
-            json.dump(self.cache, file)
+        if self.dirty:
+            dirname = os.path.dirname(self.file_path)
+            os.makedirs(dirname, exist_ok=True)
+            with open(self.file_path, "wt", encoding="utf-8") as file:
+                json.dump(self.cache, file)
 
 
 class Album:
-    def __init__(self, name, release_date, total_tracks, uri):
+    def __init__(self, name: str, release_date: str, total_tracks: int, uri: str):
         self.name = name
         self.release_date = release_date
         self.total_tracks = total_tracks
@@ -50,12 +53,30 @@ class Album:
 
 
 class Artist:
-    def __init__(self, name, uri):
+    def __init__(self, name: str, uri: str):
         self.name = name
         self.uri = uri
 
     def __str__(self) -> str:
         return self.name
+
+
+class EnrichedArtist(Artist):
+    def __init__(self, raw):
+        self.raw = raw
+        super().__init__(raw["name"], raw["uri"])
+
+    @property
+    def popularity(self) -> int:
+        return self.raw["popularity"]
+
+    @property
+    def followers(self) -> int:
+        return self.raw["followers"]["total"]
+
+    @property
+    def genres(self) -> List[str]:
+        return self.raw["genres"]
 
 
 class EnrichedTrack:
@@ -108,6 +129,22 @@ class EnrichedTrack:
         return self.name
 
 
+class EnrichedAlbum(Album):
+    def __init__(self, raw):
+        self.raw = raw
+        super().__init__(
+            raw["name"], raw["release_date"], raw["total_tracks"], raw["uri"]
+        )
+
+    @property
+    def tracks(self) -> List[EnrichedTrack]:
+        return [EnrichedTrack(t) for t in self.raw["tracks"]["items"]]
+
+    @property
+    def artists(self) -> List[Artist]:
+        return [Artist(x["name"], x["uri"]) for x in self.raw["artists"]]
+
+
 class SpotifyRepository:
     def __init__(
         self,
@@ -149,15 +186,49 @@ class SpotifyRepository:
             print(e)
             raise
 
-    def artist(self, uri: str):
+    def _ensure_cache_populated(
+        self,
+        cache: Cache,
+        get_method: Callable[[List[str]], Any],
+        uris: List[str],
+        batch_size: int,
+        results_selector: Callable[[Any], Any],
+    ) -> None:
+        uncached_uris = [uri for uri in uris if uri not in cache]
+        deduped_uris = list(set(uncached_uris))
+        if len(deduped_uris) > 0:
+            for i in range(0, len(deduped_uris), batch_size):
+                if len(deduped_uris) > 1000 and (10 * i) % batch_size == 0:
+                    print(
+                        f"{i} / {len(deduped_uris)} ({100 * i / len(deduped_uris):0.1f} %)",
+                        end="\r",
+                    )
+                batch_uris = deduped_uris[i : i + batch_size]
+                if len(batch_uris) == 0:
+                    break
+
+                results = self._call_with_care(get_method, batch_uris)
+                for result in results_selector(results):
+                    cache[result["uri"]] = result
+
+    def artist(self, uri: str) -> EnrichedArtist:
         if uri not in self.artist_cache:
             self.artist_cache[uri] = self.sapi.artist(uri)
-        return self.artist_cache[uri]
+        return EnrichedArtist(self.artist_cache[uri])
 
-    def album(self, uri: str):
+    def album(self, uri: str) -> EnrichedAlbum:
         if uri not in self.album_cache:
             self.album_cache[uri] = self.sapi.album(uri)
-        return self.album_cache[uri]
+        return EnrichedAlbum(self.album_cache[uri])
+
+    def albums(
+        self,
+        uris: List[str],
+    ) -> List[EnrichedAlbum]:
+        self._ensure_cache_populated(
+            self.album_cache, self.sapi.albums, uris, 20, lambda r: r["albums"]
+        )
+        return [EnrichedAlbum(self.album_cache[uri]) for uri in uris]
 
     def track(self, uri: str) -> EnrichedTrack:
         if uri not in self.track_cache:
@@ -165,34 +236,25 @@ class SpotifyRepository:
         return EnrichedTrack(self.track_cache[uri])
 
     def tracks(self, uris: List[str]) -> List[EnrichedTrack]:
-        uncached_uris = [uri for uri in uris if uri not in self.track_cache]
-        deduped_uris = list(set(uncached_uris))
-        track_infos = []
-        if len(deduped_uris) > 0:
-            for i in range(0, len(deduped_uris), 50):
-                if len(deduped_uris) > 5000 and i % 1000 == 0:
-                    print(
-                        f"{i} / {len(deduped_uris)} ({i / len(deduped_uris)} %)",
-                        end="\r",
-                    )
-                batch_uris = deduped_uris[i : i + 50]
-                if len(batch_uris) == 0:
-                    break
-
-                results = self._call_with_care(self.sapi.tracks, batch_uris)
-                for track in results["tracks"]:
-                    self.track_cache[track["uri"]] = track
-                    track_infos.append(track)
+        self._ensure_cache_populated(
+            self.track_cache, self.sapi.tracks, uris, 50, lambda r: r["tracks"]
+        )
         return [EnrichedTrack(self.track_cache[uri]) for uri in uris]
+
+    def artists(self, uris: List[str]):
+        self._ensure_cache_populated(
+            self.artist_cache, self.sapi.artists, uris, 50, lambda r: r["artists"]
+        )
+        return [EnrichedArtist(self.artist_cache[uri]) for uri in uris]
 
 
 with SpotifyHistoryReader() as reader:
     reader.add_source_zip("~/Downloads/2024_12_07_spotify.zip")
 
-    uris = []
+    play_uris = []
     for play in reader.read():
-        if play.is_song:
-            uris.append(play.id)
+        if play.is_song and not play.connection.incognito_mode:
+            play_uris.append(play.id)
 
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -200,8 +262,27 @@ client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 with SpotifyRepository(
     client_id, client_secret, "samples/.cache"
 ) as spotify_repository:
-    enriched_tracks = spotify_repository.tracks(uris)
+    enriched_tracks = spotify_repository.tracks(play_uris)
 
-artists = chain.from_iterable([x.artists for x in enriched_tracks])
-for artist_uri, count in Counter([x.uri for x in artists]).most_common(10):
-    print(f"{artist_uri} played {count} songs")
+    album_uris = set([x.album.uri for x in enriched_tracks])
+    enriched_albums = spotify_repository.albums(list(album_uris))
+
+    track_artists = list(chain.from_iterable([x.artists for x in enriched_tracks]))
+    track_artist_uris = [x.uri for x in track_artists]
+    enriched_artists = spotify_repository.artists(track_artist_uris)
+
+    print("\nsongs")
+    for artist_uri, count in Counter(track_artist_uris).most_common(10):
+        artist = spotify_repository.artist(artist_uri)
+        print(f"{artist.name} played {count} songs")
+
+    print("\nalbums")
+    album_artists = chain.from_iterable([x.artists for x in enriched_albums])
+    for artist_uri, count in Counter([x.uri for x in album_artists]).most_common(10):
+        artist = spotify_repository.artist(artist_uri)
+        print(f"{artist.name} played {count} albums")
+
+    print("\ngenres")
+    genres = list(chain.from_iterable([x.genres for x in enriched_artists]))
+    for genre, count in Counter(genres).most_common(10):
+        print(f"{genre} appeared {count} times")
